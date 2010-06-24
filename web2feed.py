@@ -12,6 +12,12 @@ from lxml import etree
 import html5lib
 from html5lib import sanitizer, treebuilders
 
+# For PageCache
+import time
+import hashlib
+import os
+from datetime import datetime, timedelta
+
 try:
 	from StringIO import StringIO
 except:
@@ -79,9 +85,62 @@ class SlashdotScraper(Scraper):
 		print t
 
 
+class PageCache(object):
+	"""Caches pages so it's faster to develop scraping logic for
+	different websites. This feature isn't necessary in production."""
+
+	PREFIX = './cache'
+	SUFFIX = '.html'
+
+	def __init__(self, uri):
+		self.uri = uri
+
+	def filename(self):
+		"""Get the cache filename."""
+		hname = hashlib.md5(self.uri).hexdigest()
+		return self.PREFIX + '/' + hname + self.SUFFIX
+
+	def exists(self):
+		"""Does the cache file exist?"""
+		return os.path.exists(self.filename())
+
+	def expired(self, td=timedelta(minutes=10)):
+		"""Has the cache file gone stale?"""
+		try:
+			ts = os.path.getmtime(self.filename())
+			time = datetime.fromtimestamp(ts)
+			return datetime.today() > time + td
+		except:
+			return True
+
+	def read(self):
+		"""Read from the cache file."""
+		f = open(self.filename(), 'r')
+		c = f.read()
+		f.close()
+		return c
+
+	def write(self, contents):
+		"""Save to the cache file."""
+		f = open(self.filename(), 'w')
+		f.write(contents)
+		f.close()
+
 def main():
 	uri = fix_uri(sys.argv[1])
-	content = download(uri)
+	cache = PageCache(uri)
+
+	print cache.filename()
+	print cache.exists()
+	print cache.expired()
+
+	content = None
+	if cache.exists() and not cache.expired():
+		content = cache.read()
+	else:
+		content = download(uri)
+		cache.write(content)
+
 	sc = SlashdotScraper(content)
 	sc.get_feed()
 
