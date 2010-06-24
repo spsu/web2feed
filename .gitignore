@@ -1,0 +1,9 @@
+*pyc
+
+# editor backup files
+*~
+*.sw?
+
+# Django / Celery
+settings_local.py
+celerybeat-schedule
