@@ -93,14 +93,37 @@ class SlashdotScraper(Scraper):
 	"""Slashdot"""
 	def get_feed(self):
 		# Get stories
-		#t = self.soup.findAll('div', id=r'^text-*')
-		t = self.soup.findAll('div')
-		#t = self.soup.findAll(attrs={'id' : r'text'})
-		#print self.soup.findAll('b')
-		#print self.soup.prettify()
-		#print self.soup
-		t = self.soup.findAll(attrs={'id': re.compile('text')})
-		print t
+
+		divs = self.soup.findAll(attrs={
+						'id': re.compile('^firehose-'),
+						'class': re.compile('article')
+				})
+
+		stories = []
+		for d in divs:
+			head = d.find(attrs={'class': 'datitle'})
+			cts = d.find(id=re.compile('text-'))
+			date = d.find(id=re.compile('fhtime-'))
+
+			link = fix_uri(head.attrMap['href'])
+			title = head.text
+
+			contents = ' '.join(unicode(t) for t in cts).strip()
+			#stories.append(st)
+			#stories_plain = cts.text
+
+			# TODO: Get year somehow...
+			date = date.text[3:]
+			date = datetime.strptime(date, "%A %B %d, @%I:%M%p")
+			date = date.replace(year=2010) # XXX: Get year 
+			stories.append({
+					'uri': link,
+					'title': title,
+					'date':	date,
+					'contents':	contents,
+				})
+
+		return stories
 
 class PageCache(object):
 	"""Caches pages so it's faster to develop scraping logic for
