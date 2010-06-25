@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.6
 # Brandon Thomas 2010
+# http://possibilistic.org
 # web2feed
 # BSD/MIT licensed. 
 
@@ -7,8 +8,9 @@ import sys
 from urlparse import urlparse, urljoin
 import httplib
 from BeautifulSoup import BeautifulSoup
-import libxml2
-from lxml import etree
+import re
+
+# For fixing what BeautifulSoup can't parse.
 import html5lib
 from html5lib import sanitizer, treebuilders
 
@@ -30,18 +32,34 @@ def fix_uri(uri):
 		u = urlparse(urljoin('http://', '//' + u.geturl()))
 	return u.geturl()
 
-def download(uri):
-	"""Download the contents at the URI specified."""
-	u = urlparse(uri)
-	c = httplib.HTTPConnection(u.netloc)
-	c.request('GET', u.path)
-	resp = c.getresponse()
-	return resp.read()
+def get_page(uri, timeout=10):
+	"""Get the page from online or the cache."""
+
+	def download(uri, timeout=10):
+		"""Download the contents at the URI specified."""
+		u = urlparse(uri)
+		c = httplib.HTTPConnection(u.netloc, timeout=timeout)
+		c.request('GET', u.path)
+		resp = c.getresponse()
+		return resp.read()
+
+	cache = PageCache(uri)
+	if cache.exists():
+		if cache.expired():
+			try:
+				content = download(uri, timeout)
+				cache.write(content)
+				return content
+			except:
+				print "Download failed."
+		return cache.read()
+	else:
+		content = download(uri, timeout)
+		cache.write(content)
 
 def map_domain_to_module(domain):
 	"""A router to the site-specific rules."""
 	pass
-
 
 class Scraper(object):
 	"""Scrape the content off a page."""
@@ -71,7 +89,6 @@ class Scraper(object):
 		soup = parser.parse(StringIO(content))
 		return soup.prettify()
 
-
 class SlashdotScraper(Scraper):
 	"""Slashdot"""
 	def get_feed(self):
@@ -82,8 +99,8 @@ class SlashdotScraper(Scraper):
 		#print self.soup.findAll('b')
 		#print self.soup.prettify()
 		#print self.soup
+		t = self.soup.findAll(attrs={'id': re.compile('text')})
 		print t
-
 
 class PageCache(object):
 	"""Caches pages so it's faster to develop scraping logic for
@@ -128,18 +145,7 @@ class PageCache(object):
 
 def main():
 	uri = fix_uri(sys.argv[1])
-	cache = PageCache(uri)
-
-	print cache.filename()
-	print cache.exists()
-	print cache.expired()
-
-	content = None
-	if cache.exists() and not cache.expired():
-		content = cache.read()
-	else:
-		content = download(uri)
-		cache.write(content)
+	content = get_page(uri)
 
 	sc = SlashdotScraper(content)
 	sc.get_feed()
