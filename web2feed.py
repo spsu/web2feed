@@ -2,7 +2,10 @@
 # Brandon Thomas 2010
 # http://possibilistic.org
 # web2feed
-# BSD/MIT licensed. 
+# BSD/MIT licensed.
+
+# TODO: Figure out how to modularize for each site
+# TODO: JSON payloads
 
 import sys
 from urlparse import urlparse, urljoin
@@ -24,6 +27,8 @@ try:
 	from StringIO import StringIO
 except:
 	from cStringIO import StringIO
+
+import simplejson as json # req python2.5
 
 def fix_uri(uri):
 	"""Fix a partial URI (eg. no scheme, etc.)"""
@@ -64,66 +69,47 @@ def map_domain_to_module(domain):
 class Scraper(object):
 	"""Scrape the content off a page."""
 	def __init__(self, contents):
-		self.soup = self.parse(contents)
+		# HTML DOM Tree
+		self.soup = self._parse(contents)
+
+		# Parsed out feed content
+		self.feed = self._extract_feed()
 
 	def get_feed(self):
-		pass
+		"""Get the feed."""
+		return self.feed
 
-	def parse(self, content):
+	def get_json(self):
+		"""Get the feed serialized in JSON."""
+		# Properly handle datetime objects
+		dthandle = lambda o: o.isoformat() if isinstance(o, datetime) else None
+		return json.dumps(self.feed, default=dthandle)
+
+	def _extract_feed(self):
+		"""Overload for parsing out the feed contents."""
+		return None
+
+	@staticmethod
+	def _parse(content):
 		"""Parse HTML content with BeautifulSoup."""
 		try:
 			return BeautifulSoup(content)
 		except:
 			print "HTMLParser error. Trying libxml."
-			content = self.parser_fallback(content)
+			content = self._parser_fallback(content)
 			f = open('out', 'w')
 			f.write(content)
 			f.close()
 			return BeautifulSoup(content)
 			#self.soup = content
 
-	def parser_fallback(self, content):
+	@staticmethod
+	def _parser_fallback(content):
 		"""If BeautifulSoup's parser fails, try libxml."""
 		parser = html5lib.HTMLParser(
 					tree=treebuilders.getTreeBuilder('beautifulsoup'))
 		soup = parser.parse(StringIO(content))
 		return soup.prettify()
-
-class SlashdotScraper(Scraper):
-	"""Slashdot"""
-	def get_feed(self):
-		# Get stories
-
-		divs = self.soup.findAll(attrs={
-						'id': re.compile('^firehose-'),
-						'class': re.compile('article')
-				})
-
-		stories = []
-		for d in divs:
-			head = d.find(attrs={'class': 'datitle'})
-			cts = d.find(id=re.compile('text-'))
-			date = d.find(id=re.compile('fhtime-'))
-
-			link = fix_uri(head.attrMap['href'])
-			title = head.text
-
-			contents = ' '.join(unicode(t) for t in cts).strip()
-			#stories.append(st)
-			#stories_plain = cts.text
-
-			# TODO: Get year somehow...
-			date = date.text[3:]
-			date = datetime.strptime(date, "%A %B %d, @%I:%M%p")
-			date = date.replace(year=2010) # XXX: Get year 
-			stories.append({
-					'uri': link,
-					'title': title,
-					'date':	date,
-					'contents':	contents,
-				})
-
-		return stories
 
 class PageCache(object):
 	"""Caches pages so it's faster to develop scraping logic for
@@ -166,12 +152,18 @@ class PageCache(object):
 		f.write(contents)
 		f.close()
 
+def get_scraper(content, uri):
+	"""Dispatcher for fetching appropriate scraper."""
+	from sites.slashdot import get_scraper as gs
+	return gs(content)
+
 def main():
 	uri = fix_uri(sys.argv[1])
 	content = get_page(uri)
 
-	sc = SlashdotScraper(content)
-	sc.get_feed()
+	sc = get_scraper(content, uri)
+	data = sc.get_feed()
+	print data
 
 	#map_domain_to_module(domain)
 
