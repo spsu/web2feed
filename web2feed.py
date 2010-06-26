@@ -37,30 +37,41 @@ def fix_uri(uri):
 		u = urlparse(urljoin('http://', '//' + u.geturl()))
 	return u.geturl()
 
-def get_page(uri, timeout=10):
+def get_page(uri, timeout=10, redirect_max=2):
 	"""Get the page from online or the cache."""
 
-	def download(uri, timeout=10):
+	def download(uri, timeout=10, redirect_max=2, redirect_cnt=0):
 		"""Download the contents at the URI specified."""
+		print "Downloading %s ..." % uri
 		u = urlparse(uri)
 		c = httplib.HTTPConnection(u.netloc, timeout=timeout)
 		c.request('GET', u.path)
 		resp = c.getresponse()
-		return resp.read()
+
+		if (300 <= resp.status < 400):
+			if redirect_cnt > redirect_max:
+				raise Exception, "Too many redirects."
+
+			# TODO: Handle relative locations.
+			newloc = resp.getheader('location')
+			return download(newloc, timeout, redirect_max, redirect_cnt+1)
+		else:
+			return resp.read()
 
 	cache = PageCache(uri)
 	if cache.exists():
 		if cache.expired():
 			try:
-				content = download(uri, timeout)
+				content = download(uri, timeout, redirect_max)
 				cache.write(content)
 				return content
 			except:
 				print "Download failed."
 		return cache.read()
 	else:
-		content = download(uri, timeout)
+		content = download(uri, timeout, redirect_max)
 		cache.write(content)
+		return content
 
 def map_domain_to_module(domain):
 	"""A router to the site-specific rules."""
@@ -96,7 +107,7 @@ class Scraper(object):
 			return BeautifulSoup(content)
 		except:
 			print "HTMLParser error. Trying libxml."
-			content = self._parser_fallback(content)
+			content = Scraper._parser_fallback(content)
 			f = open('out', 'w')
 			f.write(content)
 			f.close()
@@ -154,12 +165,19 @@ class PageCache(object):
 
 def get_scraper(content, uri):
 	"""Dispatcher for fetching appropriate scraper."""
-	from sites.slashdot import get_scraper as gs
+	#from sites.slashdot import get_scraper as gs
+	from sites.reddit import get_scraper as gs
+
+	print content
+
+	sys.exit()
 	return gs(content)
 
 def main():
 	uri = fix_uri(sys.argv[1])
+	print "URI (fixed): %s" % uri
 	content = get_page(uri)
+	print "Content len: %d" % 0 if not content else len(content)
 
 	sc = get_scraper(content, uri)
 	data = sc.get_feed()
