@@ -29,6 +29,9 @@ except:
 	from cStringIO import StringIO
 
 import simplejson as json # req python2.5
+import iso8601 # included in lib
+
+from mapper import get_scraper
 
 def fix_uri(uri):
 	"""Fix a partial URI (eg. no scheme, etc.)"""
@@ -36,6 +39,10 @@ def fix_uri(uri):
 	if not u.scheme:
 		u = urlparse(urljoin('http://', '//' + u.geturl()))
 	return u.geturl()
+
+def parse_date(date_str):
+	"""Wrapper around iso8601 library."""
+	return iso8601.parse_date(date_str)
 
 def get_page(uri, timeout=10, redirect_max=2):
 	"""Get the page from online or the cache."""
@@ -73,7 +80,7 @@ def get_page(uri, timeout=10, redirect_max=2):
 		cache.write(content)
 		return content
 
-def map_domain_to_module(domain):
+def map_domain_to_module(domain): # TODO
 	"""A router to the site-specific rules."""
 	pass
 
@@ -163,23 +170,13 @@ class PageCache(object):
 		f.write(contents)
 		f.close()
 
-def get_scraper(content, uri):
-	"""Dispatcher for fetching appropriate scraper."""
-	#from sites.slashdot import get_scraper as gs
-	from sites.reddit import get_scraper as gs
-
-	print content
-
-	sys.exit()
-	return gs(content)
-
 def main():
 	uri = fix_uri(sys.argv[1])
 	print "URI (fixed): %s" % uri
 	content = get_page(uri)
 	print "Content len: %d" % 0 if not content else len(content)
-
 	sc = get_scraper(content, uri)
+
 	data = sc.get_feed()
 	print data
 
