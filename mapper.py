@@ -9,16 +9,26 @@ def get_scraper(content, uri):
 	print "simplified uri: %s" %dom
 
 	# Major sites
-	if dom in ['slashdot.org', 'linux.slashdot.org']:
-		mod = 'slashdot'
-	elif dom == 'reddit.com':
-		mod = 'reddit'
+	mmap = {
+		'slashdot':
+			['slashdot.org', 'linux.slashdot.org'],
+		'reddit': 'reddit.com',
+		'lesswrong': 'lesswrong.com'
+	}
+
+	for k, v in mmap.iteritems():
+		if type(v) == str and dom == v:
+			mod = k
+			break
+		if type(v) == list and dom in v:
+			mod = k
+			break
 
 	# Personal blogs
 	mapp = {
 		'scobleizer.com': 'scobleizer',
 		'blog.broadbandmechanics.com': 'marcsvoice',
-		'aaronsw.com': 'aaronswartz',
+		'aaronsw.com': 'aaronsw',
 	}
 
 	if dom in mapp:
@@ -33,7 +43,11 @@ def get_scraper(content, uri):
 
 	module = __import__(mod)
 	module = sys.modules[mod]
-	return module.get_scraper(content)
+
+	try:
+		return module.get_scraper(content)
+	except AttributeError:
+		return anonymous_inst(module, content)
 
 def simplify_uri(uri):
 	"""Removes 'www', etc."""
@@ -49,4 +63,17 @@ def simplify_uri(uri):
 		return uri
 
 	return domain[1:]
+
+def anonymous_inst(module, content):
+	"""Instantiate scraper anonymously."""
+	from web2feed import Scraper
+	for x in dir(module):
+		z = getattr(module, x)
+		try:
+			if issubclass(z, Scraper):
+				if x not in ['Scraper', 'web2feed.Scraper']:
+					inst = getattr(module, x)(content)
+					return inst
+		except:
+			pass
 
