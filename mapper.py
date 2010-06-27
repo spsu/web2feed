@@ -8,31 +8,21 @@ def get_scraper(content, uri):
 
 	print "simplified uri: %s" %dom
 
-	# Major sites
-	mmap = {
-		'slashdot':
-			['slashdot.org', 'linux.slashdot.org'],
-		'reddit': 'reddit.com',
-		'lesswrong': 'lesswrong.com'
-	}
-
-	for k, v in mmap.iteritems():
-		if type(v) == str and dom == v:
-			mod = k
-			break
-		if type(v) == list and dom in v:
-			mod = k
-			break
-
-	# Personal blogs
+	# Mapping
 	mapp = {
-		'scobleizer.com': 'scobleizer',
-		'blog.broadbandmechanics.com': 'marcsvoice',
-		'aaronsw.com': 'aaronsw',
+		'.aaronsw.com': 'aaronsw',
+		'.broadbandmechanics.com': 'marcsvoice',
+		'.lesswrong.com': 'lesswrong',
+		'.reddit.com': 'reddit',
+		'.scobleizer.com': 'scobleizer',
+		'.slashdot.org': 'slashdot',
 	}
 
-	if dom in mapp:
-		mod = mapp[dom]
+	dom = '.' + dom
+	for k in mapp:
+		if dom.endswith(k):
+			mod = mapp[k]
+			break
 
 	print "module: %s" %mod
 
