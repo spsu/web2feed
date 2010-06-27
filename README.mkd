@@ -16,29 +16,24 @@ The following libraries are used:
 
 (A complete client would have no non-standard library dependencies.)
 
-Sites supported
----------------
-**COMPLETE:**
+Sites 
+-----
 
-**PARTIAL**
+* [Slashdot](http://slashdot.org)
+* [Reddit](http://reddit.com)
 
-* Slashdot
-* Reddit
+Software
+--------
 
-**TODO:**
+**None yet**
 
-* Twitter, etc
+(Also, heuristic scraping is incomplete.)
 
-Software supported
-------------------
-**COMPLETE:**
+Blogs
+-----
 
-**TODO:**
-
-* Wordpress, Blogger, etc.
-* phpBB, etc.
-
-(Heuristic scraping is also incomplete.)
+* [Marc Canter's blog](http://blog.broadbandmechanics.com)
+* [Robert Scoble's blog](http://scobleizer.com)
 
 License
 -------
