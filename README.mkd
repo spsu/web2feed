@@ -51,7 +51,7 @@ Output is a list of dictionaries, with the following keys:
 
 * uri
 * title
-* date (may only include date)
+* date (a python datetime object, but may only include date component)
 * contents
 * summary
 
