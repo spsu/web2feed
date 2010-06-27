@@ -1,12 +1,21 @@
 web2feed: turn webpages into feeds
 ==================================
-This is a script to turn any webpage into a feed. The program relies first on site-specific rules (for popular sites and detectable software packages), then on heuristics (_TODO_).
+This is a script to turn any webpage into a feed. The program relies first on
+site-specific rules (for popular sites and detectable software packages), then
+on heuristics (_TODO_).
 
-The premise is that _RSS/Atom feeds often don't tell the whole story_. We should be able to scrape any webpage for content regardless of what the author wants to make easily available.
+The premise is that _RSS/Atom feeds often don't tell the whole story_. We
+should be able to scrape any webpage for content regardless of what the
+author wants to make easily available.
 
-Output is a list of dictionaries, but serializations (JSON, XML, RDF) will be supported. 
+Output is a list of dictionaries, but serializations (JSON, XML, RDF) will be
+supported. Additional options to be developed include advertisement/javascript
+removal, link/image/media isolation, etc.
 
-Additional options to be developed include advertisement/javascript removal, link/image/media isolation, etc.
+Ultimately, this was written as a support package for 
+[Sylph](http://github.com/echelon/sylph), which aims to completely decentralize
+the web and take bootstrapped content with it. _(Please read more about that 
+and consider contributing.)_
 
 The following libraries are used:
 
