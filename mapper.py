@@ -33,6 +33,9 @@ def get_scraper(content, uri):
 	elif dom == 'scobleizer.com':
 		mod = 'scobleizer'
 
+	elif dom == 'blog.broadbandmechanics.com':
+		mod = 'marcsvoice'
+
 	print "module: %s" %mod
 
 	if not mod:
