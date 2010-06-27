@@ -30,7 +30,9 @@ Sites/Blogs
 
 * [Slashdot](http://slashdot.org)
 * [Reddit](http://reddit.com)
+* [Techdirt](http://techdirt.com)
 * [Less Wrong](http://lesswrong.com)
+* [Biology News](http://www.biologynews.net)
 * [Marc Canter's blog](http://blog.broadbandmechanics.com)
 * [Robert Scoble's blog](http://scobleizer.com)
 * [Aaron Swartz' blog](http://www.aaronsw.com/weblog/)
@@ -41,6 +43,19 @@ Software
 **None yet**
 
 (Also, heuristic scraping hasn't even been started yet.)
+
+Output format:
+--------------
+
+Output is a list of dictionaries, with the following keys:
+
+* uri
+* title
+* date (may only include date)
+* contents
+* summary
+
+More will be added as I write code to support comments, etc. Also to be output is the type of page, the heuristics used, etc.
 
 License
 -------

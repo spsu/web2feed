@@ -11,11 +11,13 @@ def get_scraper(content, uri):
 	# Mapping
 	mapp = {
 		'.aaronsw.com': 'aaronsw',
+		'.biologynews.net': 'biologynews',
 		'.broadbandmechanics.com': 'marcsvoice',
 		'.lesswrong.com': 'lesswrong',
 		'.reddit.com': 'reddit',
 		'.scobleizer.com': 'scobleizer',
 		'.slashdot.org': 'slashdot',
+		'.techdirt.com': 'techdirt',
 	}
 
 	dom = '.' + dom

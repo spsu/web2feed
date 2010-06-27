@@ -44,6 +44,10 @@ def parse_date(date_str):
 	"""Wrapper around iso8601 library."""
 	return iso8601.parse_date(date_str)
 
+def remove_ordinal(date_str):
+	"""Remove ordinal that datetime library can't parse."""
+	return re.sub(r'(st|nd|rd|th)', '', date_str)
+
 def get_page(uri, timeout=10, redirect_max=2):
 	"""Get the page from online or the cache."""
 
