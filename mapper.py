@@ -67,13 +67,20 @@ def simplify_uri(uri):
 def anonymous_inst(module, content):
 	"""Instantiate scraper anonymously."""
 	from web2feed import Scraper
+	cls = None
 	for x in dir(module):
 		z = getattr(module, x)
 		try:
 			if issubclass(z, Scraper):
 				if x not in ['Scraper', 'web2feed.Scraper']:
-					inst = getattr(module, x)(content)
-					return inst
+					cls = x
+					break
 		except:
 			pass
+
+	if not cls:
+		print "Anonyomous instance not found"
+		return
+
+	return getattr(module, cls)(content)
 

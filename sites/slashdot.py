@@ -53,6 +53,6 @@ class SlashdotScraper(Scraper):
 		return stories
 
 
-def get_scraper(contents):
-	return SlashdotScraper(contents)
+#def get_scraper(contents):
+#	return SlashdotScraper(contents)
 

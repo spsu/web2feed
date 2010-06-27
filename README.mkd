@@ -11,29 +11,27 @@ Additional options to be developed include advertisement/javascript removal, lin
 The following libraries are used:
 
 * BeautifulSoup
-	* html5lib (for beautiful soup fixes)
+* html5lib (for beautiful soup parser fixes)
 * simplejson
 
 (A complete client would have no non-standard library dependencies.)
 
-Sites 
+Sites/Blogs
 -----
 
 * [Slashdot](http://slashdot.org)
 * [Reddit](http://reddit.com)
+* [Less Wrong](http://lesswrong.com)
+* [Marc Canter's blog](http://blog.broadbandmechanics.com)
+* [Robert Scoble's blog](http://scobleizer.com)
+* [Aaron Swartz' blog](http://www.aaronsw.com/weblog/)
 
 Software
 --------
 
 **None yet**
 
-(Also, heuristic scraping is incomplete.)
-
-Blogs
------
-
-* [Marc Canter's blog](http://blog.broadbandmechanics.com)
-* [Robert Scoble's blog](http://scobleizer.com)
+(Also, heuristic scraping hasn't even been started yet.)
 
 License
 -------
