@@ -30,6 +30,7 @@ Sites/Blogs
 
 * [Slashdot](http://slashdot.org)
 * [Reddit](http://reddit.com)
+* [Techcrunch](http://techcrunch.com)
 * [Techdirt](http://techdirt.com)
 * [Less Wrong](http://lesswrong.com)
 * [Biology News](http://www.biologynews.net)
@@ -49,11 +50,12 @@ Output format:
 
 Output is a list of dictionaries, with the following keys:
 
-* uri
-* title
-* date (a python datetime object, but may only include date component)
-* contents
-* summary
+* **uri**
+* **title**
+* **date** (a python datetime object, but may only include date component)
+* **author**
+* **contents** and/or **summary**, which probably contain minor HTML 
+  such as <p> and <img>
 
 More will be added as I write code to support comments, etc. Also to be output is the type of page, the heuristics used, etc.
 

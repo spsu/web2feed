@@ -17,6 +17,7 @@ def get_scraper(content, uri):
 		'.reddit.com': 'reddit',
 		'.scobleizer.com': 'scobleizer',
 		'.slashdot.org': 'slashdot',
+		'.techcrunch.com': 'techcrunch',
 		'.techdirt.com': 'techdirt',
 	}
 

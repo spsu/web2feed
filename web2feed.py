@@ -164,11 +164,14 @@ class Scraper(object):
 
 		# TODO: multiple feed types.
 
-		def format(title, date, contents, wrap):
+		def format(title, date, author, contents, wrap):
 			sz = 0
 			lines = []
-			if date:
-				title += ' (%s)' % date
+			if date and author:
+				title += ' (by %s on %s)' % (author, date)
+			elif date or author:
+				title += ' (%s)' % ('on ' + date) if date else ('by ' + author)
+
 			lines += textwrap.wrap(title, wrap)
 
 			for ln in lines:
@@ -201,7 +204,11 @@ class Scraper(object):
 			if 'date' in story and story['date']:
 				date = story['date'].strftime('%B %d, %H:%M')
 
-			ret += format(title, date, cts, wrap)
+			author = ''
+			if 'author' in story and story['author']:
+				author = story['author']
+
+			ret += format(title, date, author, cts, wrap)
 			ret += "\n\n"
 
 		return ret
