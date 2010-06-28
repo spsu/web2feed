@@ -31,32 +31,31 @@ except:
 import simplejson as json # req python2.5
 import iso8601 # included in lib
 
+import htmlentitydefs # for terminal output
+import textwrap # for terminal output
+
 from mapper import get_scraper
 
-def fix_uri(uri):
-	"""Fix a partial URI (eg. no scheme, etc.)"""
-	u = urlparse(uri)
-	if not u.scheme:
-		u = urlparse(urljoin('http://', '//' + u.geturl()))
-	return u.geturl()
+# ============ Downloading / Caching ============
 
-def parse_date(date_str):
-	"""Wrapper around iso8601 library."""
-	return iso8601.parse_date(date_str)
-
-def remove_ordinal(date_str):
-	"""Remove ordinal that datetime library can't parse."""
-	return re.sub(r'(st|nd|rd|th)', '', date_str)
-
-def get_page(uri, timeout=10, redirect_max=2):
+def get_page(uri, timeout=10, redirect_max=2, caching=True,
+			cache_dir='./cache', cache_ext='.html'):
 	"""Get the page from online or the cache."""
+
+	# TODO: KeepAlive connections to host for batch fetching 
+	# of multiple pages or media
+
+	# ======== Nested Definitions ===============
 
 	def download(uri, timeout=10, redirect_max=2, redirect_cnt=0):
 		"""Download the contents at the URI specified."""
 		print "Downloading %s ..." % uri
 		u = urlparse(uri)
 		c = httplib.HTTPConnection(u.netloc, timeout=timeout)
-		c.request('GET', u.path)
+		h = {'User-Agent':
+				'web2feed.py (http://github.com/echelon/web2feed) -- ' + \
+				'Scraping content for the distributed web'}
+		c.request('GET', u.path, headers=h)
 		resp = c.getresponse()
 
 		if (300 <= resp.status < 400):
@@ -68,6 +67,60 @@ def get_page(uri, timeout=10, redirect_max=2):
 			return download(newloc, timeout, redirect_max, redirect_cnt+1)
 		else:
 			return resp.read()
+
+	class PageCache(object):
+		"""Caches pages so it's faster to develop scraping logic for
+		different websites. This feature isn't necessary in
+		production."""
+
+		PREFIX = './cache'
+		SUFFIX = '.html'
+
+		def __init__(self, uri):
+			self.uri = uri
+
+		def filename(self):
+			"""Get the cache filename."""
+			hname = hashlib.md5(self.uri).hexdigest()
+			return self.PREFIX + '/' + hname + self.SUFFIX
+
+		def exists(self):
+			"""Does the cache file exist?"""
+			return os.path.exists(self.filename())
+
+		def expired(self, td=timedelta(minutes=10)):
+			"""Has the cache file gone stale?"""
+			try:
+				ts = os.path.getmtime(self.filename())
+				time = datetime.fromtimestamp(ts)
+				return datetime.today() > time + td
+			except:
+				return True
+
+		def read(self):
+			"""Read from the cache file."""
+			f = open(self.filename(), 'r')
+			c = f.read()
+			f.close()
+			return c
+
+		def write(self, contents):
+			"""Save to the cache file."""
+			f = open(self.filename(), 'w')
+			f.write(contents)
+			f.close()
+
+	# ======== Function Body ====================
+
+	if not caching:
+		try:
+			return download(uri, timeout, redirect_max)
+		except:
+			print "Download failed."
+			return False
+
+	PageCache.PREFIX = cache_dir
+	PageCache.SUFFIX = cache_ext
 
 	cache = PageCache(uri)
 	if cache.exists():
@@ -84,9 +137,7 @@ def get_page(uri, timeout=10, redirect_max=2):
 		cache.write(content)
 		return content
 
-def map_domain_to_module(domain): # TODO
-	"""A router to the site-specific rules."""
-	pass
+# ============ Scraping Content =================
 
 class Scraper(object):
 	"""Scrape the content off a page."""
@@ -106,6 +157,54 @@ class Scraper(object):
 		# Properly handle datetime objects
 		dthandle = lambda o: o.isoformat() if isinstance(o, datetime) else None
 		return json.dumps(self.feed, default=dthandle)
+
+	def get_plaintext(self, wrap=80):
+		"""Output a feed to the terminal. This can be used for
+		debugging or for reading/wasting time."""
+
+		# TODO: multiple feed types.
+
+		def format(title, date, contents, wrap):
+			sz = 0
+			lines = []
+			if date:
+				title += ' (%s)' % date
+			lines += textwrap.wrap(title, wrap)
+
+			for ln in lines:
+				s = len(ln)
+				if s > sz:
+					sz = s
+
+			lines.append('-'*sz)
+			lines += textwrap.wrap(contents, wrap)
+			return '\n'.join(lines)
+
+		def contents_or_summary(story):
+			"""Get the contents or summary."""
+			contents = ''
+			if 'contents' in story:
+				contents = story['contents']
+			elif 'summary' in story:
+				contents = story['summary']
+			return contents
+
+		ret = ''
+		for story in self.feed:
+			cts = contents_or_summary(story)
+			cts = ''.join(BeautifulSoup(cts).findAll(text=True)) # html->txt
+
+			cts = entity_unescape(cts)
+			title = entity_unescape(story['title'])
+
+			date = ''
+			if 'date' in story:
+				date = story['date'].strftime('%B %d, %H:%M')
+
+			ret += format(title, date, cts, wrap)
+			ret += "\n\n"
+
+		return ret
 
 	def _extract_feed(self):
 		"""Overload for parsing out the feed contents."""
@@ -133,46 +232,50 @@ class Scraper(object):
 		soup = parser.parse(StringIO(content))
 		return soup.prettify()
 
-class PageCache(object):
-	"""Caches pages so it's faster to develop scraping logic for
-	different websites. This feature isn't necessary in production."""
+# ============ String Helper Funcs ==============
 
-	PREFIX = './cache'
-	SUFFIX = '.html'
+def fix_uri(uri):
+	"""Fix a partial URI (eg. no scheme, etc.)"""
+	u = urlparse(uri)
+	if not u.scheme:
+		u = urlparse(urljoin('http://', '//' + u.geturl()))
+	return u.geturl()
 
-	def __init__(self, uri):
-		self.uri = uri
+def parse_iso_date(date_str):
+	"""Wrapper around iso8601 library."""
+	return iso8601.parse_date(date_str)
 
-	def filename(self):
-		"""Get the cache filename."""
-		hname = hashlib.md5(self.uri).hexdigest()
-		return self.PREFIX + '/' + hname + self.SUFFIX
+def parse_date(date_str): # TODO: Deprecate
+	return parse_iso_date(date_str)
 
-	def exists(self):
-		"""Does the cache file exist?"""
-		return os.path.exists(self.filename())
+def remove_ordinal(date_str):
+	"""Remove ordinal that datetime library can't parse."""
+	return re.sub(r'(st|nd|rd|th)', '', date_str)
 
-	def expired(self, td=timedelta(minutes=10)):
-		"""Has the cache file gone stale?"""
-		try:
-			ts = os.path.getmtime(self.filename())
-			time = datetime.fromtimestamp(ts)
-			return datetime.today() > time + td
-		except:
-			return True
+def entity_unescape(text):
+	"""Turn htmlentities into unicode.
+	From http://effbot.org/zone/re-sub.htm#unescape-html"""
+	def fixup(m):
+		text = m.group(0)
+		if text[:2] == "&#":
+			# character reference
+			try:
+				if text[:3] == "&#x":
+					return unichr(int(text[3:-1], 16))
+				else:
+					return unichr(int(text[2:-1]))
+			except ValueError:
+				pass
+		else:
+			# named entity
+			try:
+				text = unichr(htmlentitydefs.name2codepoint[text[1:-1]])
+			except KeyError:
+				pass
+		return text # leave as is
+	return re.sub("&#?\w+;", fixup, text)
 
-	def read(self):
-		"""Read from the cache file."""
-		f = open(self.filename(), 'r')
-		c = f.read()
-		f.close()
-		return c
-
-	def write(self, contents):
-		"""Save to the cache file."""
-		f = open(self.filename(), 'w')
-		f.write(contents)
-		f.close()
+# ============ Run from terminal ================
 
 def main():
 	uri = fix_uri(sys.argv[1])
@@ -181,8 +284,8 @@ def main():
 	print "Content len: %d" % 0 if not content else len(content)
 	sc = get_scraper(content, uri)
 
-	data = sc.get_feed()
-	print data
+	#print sc.get_feed()
+	print sc.get_plaintext(80)
 
 	#map_domain_to_module(domain)
 
