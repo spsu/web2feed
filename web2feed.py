@@ -198,7 +198,7 @@ class Scraper(object):
 			title = entity_unescape(story['title'])
 
 			date = ''
-			if 'date' in story:
+			if 'date' in story and story['date']:
 				date = story['date'].strftime('%B %d, %H:%M')
 
 			ret += format(title, date, cts, wrap)
@@ -245,12 +245,9 @@ def parse_iso_date(date_str):
 	"""Wrapper around iso8601 library."""
 	return iso8601.parse_date(date_str)
 
-def parse_date(date_str): # TODO: Deprecate
-	return parse_iso_date(date_str)
-
 def remove_ordinal(date_str):
 	"""Remove ordinal that datetime library can't parse."""
-	return re.sub(r'(st|nd|rd|th)', '', date_str)
+	return re.sub(r'(\d+)(st|nd|rd|th)', r'\1', date_str)
 
 def entity_unescape(text):
 	"""Turn htmlentities into unicode.

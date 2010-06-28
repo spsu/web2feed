@@ -1,4 +1,4 @@
-from web2feed import Scraper, fix_uri, parse_date
+from web2feed import Scraper, fix_uri, parse_iso_date
 
 import re
 import datetime
@@ -19,7 +19,7 @@ class ScobleizerScraper(Scraper):
 
 				title = a.text
 				link = a.attrMap['href']
-				date = parse_date(d.attrMap['title'])
+				date = parse_iso_date(d.attrMap['title'])
 
 				# crude extraction of text contents
 				# XXX: Fixme, this is ugly
@@ -39,8 +39,8 @@ class ScobleizerScraper(Scraper):
 						'contents': contents
 					})
 
-			except:
-				print "exception"
+			except Exception as e:
+				#print e
 				continue
 
 		return stories

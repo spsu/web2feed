@@ -1,4 +1,4 @@
-from web2feed import Scraper, fix_uri, parse_date
+from web2feed import Scraper, fix_uri, remove_ordinal
 
 import re
 from datetime import datetime
@@ -29,12 +29,12 @@ class MarcsVoiceScraper(Scraper):
 					x = x.replace('|', '').strip()
 
 					# TODO: Really need to write a date parser module
-					x = re.sub(r'(st|nd|rd|th)', '', x) # remove ordinal
+					x = remove_ordinal(x)
 					parse_date = None
 					parse_time = None
 					try:
 						parse_date = datetime.strptime(x, "%A, %B %d, %Y")
-					except:
+					except Exception as e:
 						pass
 					try:
 						parse_time = datetime.strptime(x, "%I:%M %p")
@@ -51,7 +51,7 @@ class MarcsVoiceScraper(Scraper):
 				try:
 					date = datetime.combine(date, time.time())
 				except Exception as e:
-					print e
+					pass #print e
 
 				# extraction of text contents, again *semantics*
 				contents = ''

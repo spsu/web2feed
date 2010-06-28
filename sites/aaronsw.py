@@ -1,4 +1,4 @@
-from web2feed import Scraper, fix_uri, parse_date
+from web2feed import Scraper
 
 import re
 from datetime import datetime
