@@ -4,6 +4,5 @@
 *~
 *.sw?
 
-# Django / Celery
-settings_local.py
-celerybeat-schedule
+# Cache directory
+cache/
