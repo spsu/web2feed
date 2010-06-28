@@ -56,7 +56,7 @@ Output is a list of dictionaries, with the following keys:
 * **date** (a python datetime object, but may only include date component)
 * **author**
 * **contents** and/or **summary**, which probably contain minor HTML 
-  such as <p> and <img>
+  such as &lt;p&gt; and &lt;img&gt;
 
 More will be added as I write code to support comments, etc. Also to be output is the type of page, the heuristics used, etc.
 
