@@ -13,6 +13,7 @@ def get_scraper(content, uri):
 		'.aaronsw.com': 'aaronsw',
 		'.biologynews.net': 'biologynews',
 		'.broadbandmechanics.com': 'marcsvoice',
+		'.dataportability.org': 'dataportability',
 		'.lesswrong.com': 'lesswrong',
 		'.reddit.com': 'reddit',
 		'.scobleizer.com': 'scobleizer',

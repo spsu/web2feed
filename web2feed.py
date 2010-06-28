@@ -142,10 +142,13 @@ def get_page(uri, timeout=10, redirect_max=2, caching=True,
 class Scraper(object):
 	"""Scrape the content off a page."""
 	def __init__(self, contents):
-		# HTML DOM Tree
+		# HTML DOM Tree.
+		# Only used in parsing.
 		self.soup = self._parse(contents)
 
 		# Parsed out feed content
+		# Used for any presentation. 
+		# TODO: Do cleaning, etc. on this.
 		self.feed = self._extract_feed()
 
 	def get_feed(self):

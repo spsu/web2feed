@@ -34,6 +34,7 @@ Sites/Blogs
 * [Techdirt](http://techdirt.com)
 * [Less Wrong](http://lesswrong.com)
 * [Biology News](http://www.biologynews.net)
+* [Data Portability Blog](http://blog.dataportability.org/)
 * [Marc Canter's blog](http://blog.broadbandmechanics.com)
 * [Robert Scoble's blog](http://scobleizer.com)
 * [Aaron Swartz' blog](http://www.aaronsw.com/weblog/)
