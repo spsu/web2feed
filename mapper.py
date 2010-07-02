@@ -41,7 +41,7 @@ def get_scraper(content, uri):
 	try:
 		return module.get_scraper(content)
 	except AttributeError:
-		return anonymous_inst(module, content)
+		return anonymous_inst(module, content, uri)
 
 def simplify_uri(uri):
 	"""Removes 'www', etc."""
@@ -58,7 +58,7 @@ def simplify_uri(uri):
 
 	return domain[1:]
 
-def anonymous_inst(module, content):
+def anonymous_inst(module, content, uri):
 	"""Instantiate scraper anonymously."""
 	from web2feed import Scraper
 	cls = None
@@ -76,5 +76,8 @@ def anonymous_inst(module, content):
 		print "Anonyomous instance not found"
 		return
 
-	return getattr(module, cls)(content)
+	sc = getattr(module, cls)(content, uri)
+	print sc
+	print sc.uri
+	return sc
 

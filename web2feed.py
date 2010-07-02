@@ -36,6 +36,30 @@ import textwrap # for terminal output
 
 from mapper import get_scraper
 
+# ============ Run from terminal ================
+
+def main():
+	uri = fix_uri(sys.argv[1])
+	print "URI (fixed): %s" % uri
+	content = get_page(uri)
+	print "Content len: %d" % 0 if not content else len(content)
+	sc = get_scraper(content, uri)
+
+	#print sc.get_feed()
+	print sc.get_plaintext(80)
+
+	#map_domain_to_module(domain)
+
+def web2feed(uri, timeout=15, redirect_max=2, cache=False):
+	"""The main importable API for web2feed."""
+	uri = fix_uri(uri)
+	content = get_page(uri,
+						timeout=timeout,
+						redirect_max=redirect_max,
+						caching=cache)
+	scraper = get_scraper(content, uri)
+	return scraper.get_feed()
+
 # ============ Downloading / Caching ============
 
 def get_page(uri, timeout=10, redirect_max=2, caching=True,
@@ -141,7 +165,10 @@ def get_page(uri, timeout=10, redirect_max=2, caching=True,
 
 class Scraper(object):
 	"""Scrape the content off a page."""
-	def __init__(self, contents):
+	def __init__(self, contents, uri):
+		# Web location page was downloaded from (if known)
+		self.uri = uri
+
 		# HTML DOM Tree.
 		# Only used in parsing.
 		self.soup = self._parse(contents)
@@ -195,8 +222,12 @@ class Scraper(object):
 				contents = story['summary']
 			return contents
 
+		feed = self.feed
+		if type(feed) is dict:
+			feed = [feed,]
+
 		ret = ''
-		for story in self.feed:
+		for story in feed:
 			cts = contents_or_summary(story)
 			cts = ''.join(BeautifulSoup(cts).findAll(text=True)) # html->txt
 
@@ -281,30 +312,6 @@ def entity_unescape(text):
 				pass
 		return text # leave as is
 	return re.sub("&#?\w+;", fixup, text)
-
-# ============ Run from terminal ================
-
-def main():
-	uri = fix_uri(sys.argv[1])
-	print "URI (fixed): %s" % uri
-	content = get_page(uri)
-	print "Content len: %d" % 0 if not content else len(content)
-	sc = get_scraper(content, uri)
-
-	#print sc.get_feed()
-	print sc.get_plaintext(80)
-
-	#map_domain_to_module(domain)
-
-def web2feed(uri, timeout=15, redirect_max=2, cache=False):
-	"""The main importable API for web2feed."""
-	uri = fix_uri(uri)
-	content = get_page(uri,
-						timeout=timeout,
-						redirect_max=redirect_max,
-						caching=cache)
-	scraper = get_scraper(content, uri)
-	return scraper.get_feed()
 
 if __name__ == '__main__':
 	main()

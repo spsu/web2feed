@@ -7,10 +7,20 @@ class BiologyNewsScraper(Scraper):
 	"""Scraper for BiologyNewsNet (which I just found, but looks fun)"""
 
 	def _extract_feed(self):
+		if not self.uri:
+			print "BiologyNewsNet requires a URI to parse."
+
+		if 'archive' in self.uri:
+			return self._story_page()
+		else:
+			return self._feed_page()
+
+	def _feed_page(self):
+		"""Main feed page."""
 		posts = self.soup.findAll('div', attrs={'class':'article'})
 
 		# Aside from table tag soup, this is the most semantic markup
-		# I've seen so far. Very surprising. 
+		# I've seen so far. Very surprising.
 		stories = []
 		for p in posts:
 			try:
@@ -38,4 +48,41 @@ class BiologyNewsScraper(Scraper):
 
 		return stories
 
+	def _story_page(self):
+		"""Single story page."""
+		story = self.soup.find('div', attrs={'class':'article'})
+		h = story.find('h1')
+		d = story.find('div', attrs={'class':'utility'})
+		cts = story.find('div', attrs={'class':'post'})
+
+		title = h.a.text
+		link = h.a['href']
+		date = d.findAll('td')[0].text
+		date = datetime.strptime(date, "%B %d, %Y %I:%M %p")
+		contents = ''
+		for t in cts.contents:
+			try:
+				cls = t['class']
+				if cls in ['ad', 'relatedads']:
+					continue
+			except:
+				pass
+			try:
+				typ = str(type(t))
+				if 'Comment' in typ:
+					continue
+			except:
+				pass
+			contents += unicode(t).strip()
+
+		story = {
+				'uri': link,
+				'title': title,
+				'date': date,
+				'contents': contents,
+		}
+
+		print story
+
+		return story
 
