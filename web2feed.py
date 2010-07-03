@@ -58,7 +58,12 @@ def web2feed(uri, timeout=15, redirect_max=2, cache=False):
 						redirect_max=redirect_max,
 						caching=cache)
 	scraper = get_scraper(content, uri)
-	return scraper.get_feed()
+
+	ret = {
+		'meta': scraper.get_meta(),
+		'feed': scraper.get_feed(),
+	}
+	return ret
 
 # ============ Downloading / Caching ============
 
@@ -173,6 +178,9 @@ class Scraper(object):
 		# Only used in parsing.
 		self.soup = self._parse(contents)
 
+		# Meta information such as <title> and description
+		self.meta = {}
+
 		# Parsed out feed content
 		# Used for any presentation. 
 		# TODO: Do cleaning, etc. on this.
@@ -181,6 +189,10 @@ class Scraper(object):
 	def get_feed(self):
 		"""Get the feed."""
 		return self.feed
+
+	def get_meta(self):
+		"""Get the meta info."""
+		return self.meta
 
 	def get_json(self):
 		"""Get the feed serialized in JSON."""

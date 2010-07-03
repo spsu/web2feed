@@ -17,6 +17,12 @@ class BiologyNewsScraper(Scraper):
 
 	def _feed_page(self):
 		"""Main feed page."""
+		meta = {}
+		meta['title'] = self.soup.find('title').text
+		meta['description'] = self.soup.find('meta', attrs={'name':'description'})['content']
+
+		self.meta = meta
+
 		posts = self.soup.findAll('div', attrs={'class':'article'})
 
 		# Aside from table tag soup, this is the most semantic markup
@@ -81,8 +87,5 @@ class BiologyNewsScraper(Scraper):
 				'date': date,
 				'contents': contents,
 		}
-
-		print story
-
 		return story
 
