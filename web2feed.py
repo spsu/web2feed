@@ -50,10 +50,13 @@ def main():
 
 	#map_domain_to_module(domain)
 
-def web2feed(uri, timeout=15, redirect_max=2, cache=False):
-	"""The main importable API for web2feed."""
+def web2feed(uri, content=False, timeout=15, redirect_max=2, cache=False):
+	"""The main importable API for web2feed. Content can be passed
+	or downloaded by web2feed."""
 	uri = fix_uri(uri)
-	content = get_page(uri,
+
+	if not content:
+		content = get_page(uri,
 						timeout=timeout,
 						redirect_max=redirect_max,
 						caching=cache)
