@@ -4,9 +4,6 @@
 # http://github.com/echelon/web2feed
 # BSD/MIT licensed.
 
-# TODO: Figure out how to modularize for each site
-# TODO: JSON payloads
-
 import sys
 from urlparse import urlparse, urljoin
 import httplib
@@ -41,22 +38,16 @@ from mapper import get_scraper
 
 # TODO/XXX: DEPRECATE web2feed()
 def web2feed(uri, content=False, timeout=15, redirect_max=2, cache=False):
-	"""The main importable API for web2feed. Content can be passed
-	or downloaded by web2feed."""
-	uri = fix_uri(uri)
+	"""Deprecated API for web2feed. Content can be passed or downloaded
+	by web2feed."""
+	wf = Web2Feed(uri)
 
-	if not content:
-		content = get_page(uri,
-						timeout=timeout,
-						redirect_max=redirect_max,
-						caching=cache)
-	scraper = get_scraper(content, uri)
+	if content:
+		wf.set_contents(content)
+	else:
+		wf.set_caching(cache)
 
-	ret = {
-		'meta': scraper.get_meta(),
-		'feed': scraper.get_feed(),
-	}
-	return ret
+	return wf.get_feed()
 
 class Web2Feed(object):
 	"""Web2Feed, an API for scraping websites for content."""
@@ -65,7 +56,8 @@ class Web2Feed(object):
 		"""Supply the URI and optionally prefetched content."""
 		self.uri = fix_uri(uri)
 		self.contents = contents
-		self.uagent = 'Web2Feed (http://github.com/echelon/web2feed)'
+		self.uagent = 'web2feed.py (http://github.com/echelon/web2feed) -- ' \
+						'Scraping content for the distributed web'
 		self.robot_rules_str = ''
 
 		# Robots.txt rules policy
@@ -81,11 +73,15 @@ class Web2Feed(object):
 		self.do_auto_fetch = True
 		self.do_auto_fetch_rules = True
 
+		# Cached scraper, purged if contents set or fetched.
+		self.scraper = None
+
 	def set_contents(self, contents):
 		"""Supply externally-fetched content."""
 		self.contents = contents
 		self.do_auto_fetch = False
 		self.do_auto_fetch_rules = False
+		self.scraper = None
 
 	def get_contents(self):
 		return self.contents
@@ -116,6 +112,7 @@ class Web2Feed(object):
 	def fetch(self, timeout=15, redirect_max=2):
 		"""Fetch the page with web2feed's libraries."""
 		self.do_auto_fetch = False
+		self.scraper = None
 
 		# Robots.txt handling
 		if self.obey_rules:
@@ -134,48 +131,56 @@ class Web2Feed(object):
 								"the resource at '%s'" % self.uri
 						return False
 
-		# TODO: Cache timeout
-		# TODO: Cache dir
 		# TODO: Error handling
 		contents = get_page(self.uri,
 						timeout=timeout,
 						redirect_max=redirect_max,
-						caching=self.use_caching)
+						caching=self.use_caching,
+						cache_period=self.cache_timeout,
+						cache_dir=self.cache_dir,
+						uagent=self.uagent)
 
 		self.contents = contents
 
 	def fetch_rules(self, timeout=15, redirect_max=2):
 		"""Fetch the robots.txt with web2feed's libraries."""
 		self.do_auto_fetch_rules = False
-
 		robots_uri = urljoin(self.uri, '/robots.txt')
 
-		# TODO: Cache timeout
-		# TODO: Cache dir
 		# TODO: Error handling
 		rules = get_page(robots_uri,
 					timeout=timeout,
 					redirect_max=redirect_max,
-					caching=self.use_caching)
+					caching=self.use_caching,
+					cache_period=self.cache_timeout,
+					cache_dir=self.cache_dir,
+					uagent=self.uagent)
 
 		self.robot_rules_str = rules
 
 	def get_feed(self):
 		"""Scrape the page for semantic content."""
+		def get_formatted(scraper):
+			return {
+				'meta': scraper.get_meta(),
+				'feed': scraper.get_feed(),
+			}
+
+		if self.scraper:
+			return get_formatted(self.scraper)
+
 		if not self.contents and self.do_auto_fetch:
 			print "Web2Feed.get_feed() Attempting to fetch..."
 			self.fetch()
+
 		if not self.contents:
-			raise Exception, "No content to scrape!"
+			#raise Exception, "No content to scrape!"
+			print "Web2Feed.get_feed() unable to parse: no contents!"
+			return False
 
 		# TODO: Cache the scraper.
-		scraper = get_scraper(self.contents, self.uri)
-
-		ret = {
-			'meta': scraper.get_meta(),
-			'feed': scraper.get_feed(),
-		}
-		return ret
+		self.scraper = get_scraper(self.contents, self.uri)
+		return get_formatted(self.scraper)
 
 # ============ Run from terminal ================
 
@@ -201,7 +206,7 @@ def main():
 
 # ============ Downloading / Caching ============
 
-def get_page(uri, timeout=10, redirect_max=2, caching=True,
+def get_page(uri, timeout=10, redirect_max=2, caching=True, uagent=None,
 			cache_period=timedelta(minutes=10),
 			cache_dir='./cache', cache_ext='.html'):
 	"""Get the page from online or the cache."""
@@ -211,14 +216,15 @@ def get_page(uri, timeout=10, redirect_max=2, caching=True,
 
 	# ======== Nested Definitions ===============
 
-	def download(uri, timeout=10, redirect_max=2, redirect_cnt=0):
+	def download(uri, timeout=10, redirect_max=2, redirect_cnt=0, uagent=None):
 		"""Download the contents at the URI specified."""
 		print "Downloading %s ..." % uri
 		u = urlparse(uri)
 		c = httplib.HTTPConnection(u.netloc, timeout=timeout)
-		h = {'User-Agent':
-				'web2feed.py (http://github.com/echelon/web2feed) -- ' + \
-				'Scraping content for the distributed web'}
+		if uagent==None:
+			uagent = 'web2feed.py (http://github.com/echelon/web2feed) ' \
+						'-- Scraping content for the distributed web'
+		h = {'User-Agent': uagent}
 		c.request('GET', u.path, headers=h)
 		resp = c.getresponse()
 
@@ -290,18 +296,18 @@ def get_page(uri, timeout=10, redirect_max=2, caching=True,
 	if cache.exists():
 		if cache.expired(cache_period):
 			try:
-				content = download(uri, timeout, redirect_max)
+				content = download(uri, timeout, redirect_max, uagent)
 				cache.write(content)
 				return content
 			except:
 				print "Download failed."
 		return cache.read()
 	else:
-		content = download(uri, timeout, redirect_max)
+		content = download(uri, timeout, redirect_max, uagent)
 		cache.write(content)
 		return content
 
-# ============ Robots.txt Checking ==============
+# ============ Robots.txt Rule Checking =========
 
 def robot_is_allowed(uri, uagent, allow_on_fail=True, rules_str='', cache=True,
 		cache_period=timedelta(minutes=10)):
