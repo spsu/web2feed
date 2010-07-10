@@ -10,6 +10,7 @@
 import sys
 from urlparse import urlparse, urljoin
 import httplib
+from robotparser import RobotFileParser
 from BeautifulSoup import BeautifulSoup
 import re
 
@@ -29,26 +30,15 @@ except:
 	from cStringIO import StringIO
 
 import simplejson as json # req python2.5
-import iso8601 # included in lib
+from libs import iso8601
+from libs.robotexclusionrulesparser import RobotExclusionRulesParser
 
 import htmlentitydefs # for terminal output
 import textwrap # for terminal output
 
 from mapper import get_scraper
 
-# ============ Run from terminal ================
-
-def main():
-	uri = fix_uri(sys.argv[1])
-	print "URI (fixed): %s" % uri
-	content = get_page(uri)
-	print "Content len: %d" % 0 if not content else len(content)
-	sc = get_scraper(content, uri)
-
-	#print sc.get_feed()
-	print sc.get_plaintext(80)
-
-	#map_domain_to_module(domain)
+# ============ Library API ======================
 
 def web2feed(uri, content=False, timeout=15, redirect_max=2, cache=False):
 	"""The main importable API for web2feed. Content can be passed
@@ -68,9 +58,31 @@ def web2feed(uri, content=False, timeout=15, redirect_max=2, cache=False):
 	}
 	return ret
 
+# ============ Run from terminal ================
+
+def main():
+	uri = fix_uri(sys.argv[1])
+	print "URI (fixed): %s" % uri
+
+	print robot_is_allowed(uri, 'web2feed')
+
+	print robot_is_allowed(urljoin(uri,'/index.pl'), 'web2feed')
+
+	sys.exit()
+	
+	content = get_page(uri)
+	print "Content len: %d" % 0 if not content else len(content)
+	sc = get_scraper(content, uri)
+
+	#print sc.get_feed()
+	print sc.get_plaintext(80)
+
+	#map_domain_to_module(domain)
+
 # ============ Downloading / Caching ============
 
 def get_page(uri, timeout=10, redirect_max=2, caching=True,
+			cache_period=timedelta(minutes=10),
 			cache_dir='./cache', cache_ext='.html'):
 	"""Get the page from online or the cache."""
 
@@ -156,7 +168,7 @@ def get_page(uri, timeout=10, redirect_max=2, caching=True,
 
 	cache = PageCache(uri)
 	if cache.exists():
-		if cache.expired():
+		if cache.expired(cache_period):
 			try:
 				content = download(uri, timeout, redirect_max)
 				cache.write(content)
@@ -168,6 +180,34 @@ def get_page(uri, timeout=10, redirect_max=2, caching=True,
 		content = download(uri, timeout, redirect_max)
 		cache.write(content)
 		return content
+
+# ============ Robots.txt Checking ==============
+
+def robot_is_allowed(uri, uagent, allow_on_fail=True, rules_str='', cache=True,
+		cache_period=timedelta(minutes=10)):
+	"""Check if the robot is allowed to fetch the desired URI.
+	The URI must be absolute.
+	Can make decision policy when robots.txt  was unable to be fetched.
+	Can supply the already-fetched rules string. If letting web2feed
+	download robots.txt, it can be cached."""
+
+	if not rules_str:
+		robots_uri = urljoin(uri, '/robots.txt')
+		# TODO: better check.
+		if robots_uri == '/robots.txt':
+			print 'Non-absolute uri for robot_is_allowed: %s' % uri
+			return allow_on_fail
+
+		print 'ROBOT URI: %s' % robots_uri
+		rules_str = get_page(robots_uri, caching=cache,
+							cache_period=cache_period)
+
+	if not rules_str:
+		return allow_on_fail
+
+	rparse = RobotExclusionRulesParser()
+	rparse.parse(rules_str)
+	return rparse.is_allowed(uagent, uri)
 
 # ============ Scraping Content =================
 

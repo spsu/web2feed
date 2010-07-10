@@ -1,4 +1,9 @@
-"""ISO 8601 date time string parsing
+"""
+ISO 8601 datetime string parsing
+Author: Michael Twomey <micktwomey+iso8601 at gmail com>
+License: MIT
+http://pypi.python.org/pypi/iso8601/0.1.4
+http://code.google.com/p/pyiso8601/
 
 Basic usage:
 >>> import iso8601
