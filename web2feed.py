@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.6
-# Brandon Thomas 2010
+# Brandon Thomas (c) 2010
 # http://possibilistic.org
-# web2feed
+# http://github.com/echelon/web2feed
 # BSD/MIT licensed.
 
 # TODO: Figure out how to modularize for each site
@@ -10,7 +10,6 @@
 import sys
 from urlparse import urlparse, urljoin
 import httplib
-from robotparser import RobotFileParser
 from BeautifulSoup import BeautifulSoup
 import re
 
@@ -40,6 +39,7 @@ from mapper import get_scraper
 
 # ============ Library API ======================
 
+# TODO/XXX: DEPRECATE web2feed()
 def web2feed(uri, content=False, timeout=15, redirect_max=2, cache=False):
 	"""The main importable API for web2feed. Content can be passed
 	or downloaded by web2feed."""
@@ -58,18 +58,138 @@ def web2feed(uri, content=False, timeout=15, redirect_max=2, cache=False):
 	}
 	return ret
 
+class Web2Feed(object):
+	"""Web2Feed, an API for scraping websites for content."""
+
+	def __init__(self, uri, contents=''):
+		"""Supply the URI and optionally prefetched content."""
+		self.uri = fix_uri(uri)
+		self.contents = contents
+		self.uagent = 'Web2Feed (http://github.com/echelon/web2feed)'
+		self.robot_rules_str = ''
+
+		# Robots.txt rules policy
+		self.obey_rules = True
+		self.allow_on_fail = True
+
+		# Page caching rules (same for requested page and robots.txt)
+		self.use_caching = False
+		self.cache_timeout = timedelta(minutes=10)
+		self.cache_dir = './cache'
+
+		# If prefetched content not supplied, autofetch?
+		self.do_auto_fetch = True
+		self.do_auto_fetch_rules = True
+
+	def set_contents(self, contents):
+		"""Supply externally-fetched content."""
+		self.contents = contents
+		self.do_auto_fetch = False
+		self.do_auto_fetch_rules = False
+
+	def get_contents(self):
+		return self.contents
+
+	def set_uagent(self, uagent):
+		"""Set the user-agent for fetching content."""
+		self.uagent = uagent
+
+	def set_robot_rules(self, rules_str):
+		"""Supply the robots.txt file if externally-fetched."""
+		self.robot_rules_str = rules_str
+		self.do_auto_fetch_rules = False
+
+	def get_robot_rules(self):
+		return self.robot_rules_str
+
+	def set_robot_rules_policy(self, obey_rules, allow_on_fail=True):
+		"""Set he robot.txt rules policy."""
+		self.obey_rules = obey_rules
+		self.allow_on_fail = allow_on_fail
+
+	def set_caching(self, use_caching, cache_timeout=timedelta(minutes=10),
+			cache_dir='./cache'):
+		self.use_caching = use_caching
+		self.cache_timeout = cache_timeout
+		self.cache_dir = cache_dir
+
+	def fetch(self, timeout=15, redirect_max=2):
+		"""Fetch the page with web2feed's libraries."""
+		self.do_auto_fetch = False
+
+		# Robots.txt handling
+		if self.obey_rules:
+			if self.do_auto_fetch_rules:
+				self.fetch_rules(timeout, redirect_max)
+
+			if not self.robot_rules_str and not self.allow_on_fail:
+				print "robots.txt could not be fetched, but policy " \
+						"indicates we must obtain it."
+				return False
+
+			if self.robot_rules_str and not \
+				robot_is_allowed(self.uri, self.uagent,
+					rules_str=self.robot_rules_str):
+						print "robots.txt indicates we cannot download " \
+								"the resource at '%s'" % self.uri
+						return False
+
+		# TODO: Cache timeout
+		# TODO: Cache dir
+		# TODO: Error handling
+		contents = get_page(self.uri,
+						timeout=timeout,
+						redirect_max=redirect_max,
+						caching=self.use_caching)
+
+		self.contents = contents
+
+	def fetch_rules(self, timeout=15, redirect_max=2):
+		"""Fetch the robots.txt with web2feed's libraries."""
+		self.do_auto_fetch_rules = False
+
+		robots_uri = urljoin(self.uri, '/robots.txt')
+
+		# TODO: Cache timeout
+		# TODO: Cache dir
+		# TODO: Error handling
+		rules = get_page(robots_uri,
+					timeout=timeout,
+					redirect_max=redirect_max,
+					caching=self.use_caching)
+
+		self.robot_rules_str = rules
+
+	def get_feed(self):
+		"""Scrape the page for semantic content."""
+		if not self.contents and self.do_auto_fetch:
+			print "Web2Feed.get_feed() Attempting to fetch..."
+			self.fetch()
+		if not self.contents:
+			raise Exception, "No content to scrape!"
+
+		# TODO: Cache the scraper.
+		scraper = get_scraper(self.contents, self.uri)
+
+		ret = {
+			'meta': scraper.get_meta(),
+			'feed': scraper.get_feed(),
+		}
+		return ret
+
 # ============ Run from terminal ================
 
 def main():
-	uri = fix_uri(sys.argv[1])
-	print "URI (fixed): %s" % uri
 
-	print robot_is_allowed(uri, 'web2feed')
+	wf = Web2Feed(sys.argv[1])
 
-	print robot_is_allowed(urljoin(uri,'/index.pl'), 'web2feed')
+	wf.set_caching(True)
+	wf.set_robot_rules_policy(True, False)
+
+	print wf.get_feed()
+
 
 	sys.exit()
-	
 	content = get_page(uri)
 	print "Content len: %d" % 0 if not content else len(content)
 	sc = get_scraper(content, uri)
