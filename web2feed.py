@@ -363,15 +363,6 @@ class Scraper(object):
 		self._guess_format()
 		self._add_markdown()
 
-		for x in self.feed:
-			if 'contents_markdown' in x:
-				print x['contents_markdown']
-			elif 'contents_summary' in x:
-				print x['summary_markdown']
-			print '-------------'
-
-		sys.exit()
-
 	def _guess_format(self):
 		"""Guess the format of the data returned."""
 		for i in range(len(self.feed)):
