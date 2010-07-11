@@ -53,12 +53,12 @@ Output is a list of dictionaries, with the following keys:
 
 * **uri**
 * **title**
-* **date** (a python datetime object, but may only include date component)
-* **author**
+* **date**, a python datetime object, but may not include a time component if the website didn't list the time
+* **author**, name of the author
 * **contents** and/or **summary**, which probably contain minor HTML 
   such as &lt;p&gt; and &lt;img&gt;
-* **[contents|summary]_format**, which are either 'text/plain' or 'text/html'
-
+* **contents_format** and/or **summary_format**, which are either 'text/plain' or 'text/html'
+* **contents_markdown** and/or **summary_markdown**, which contains markdown-formatted version of the respective text
 
 More will be added as I write code to support comments, etc. Also to be output is the type of page, the heuristics used, etc.
 
