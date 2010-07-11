@@ -53,6 +53,3 @@ class AaronSwartzBlogScraper(Scraper):
 
 		return stories
 
-def get_scraper(content):
-	return AaronSwartzBlogScraper(content)
-

@@ -1,8 +1,10 @@
 #!/usr/bin/env python2.6
-# Brandon Thomas (c) 2010
+# Brandon Thomas <echelon@gmail.com>
 # http://possibilistic.org
+# Web2Feed, a work in progress web scraping tool.
 # http://github.com/echelon/web2feed
-# BSD/MIT licensed.
+# Copyright 2010. BSD/MIT licensed.
+# Utilizes GPL-licensed code, so combined distribution is GPL.
 
 import sys
 from urlparse import urlparse, urljoin
@@ -31,6 +33,8 @@ from libs.robotexclusionrulesparser import RobotExclusionRulesParser
 
 import htmlentitydefs # for terminal output
 import textwrap # for terminal output
+from libs.html2text import html2text # XXX: GPL LICENSED!
+
 
 from mapper import get_scraper
 
@@ -357,6 +361,16 @@ class Scraper(object):
 
 		# TODO: Bad form
 		self._guess_format()
+		self._add_markdown()
+
+		for x in self.feed:
+			if 'contents_markdown' in x:
+				print x['contents_markdown']
+			elif 'contents_summary' in x:
+				print x['summary_markdown']
+			print '-------------'
+
+		sys.exit()
 
 	def _guess_format(self):
 		"""Guess the format of the data returned."""
@@ -376,6 +390,15 @@ class Scraper(object):
 					x['summary_format'] = 'text/html'
 				else:
 					x['summary_format'] = 'text/plain'
+
+	def _add_markdown(self):
+		"""Add markdown version of the content."""
+		for i in range(len(self.feed)):
+			x = self.feed[i]
+			if 'contents' in x:
+				x['contents_markdown'] = html2text(x['contents'], self.uri)
+			if 'summary' in x:
+				x['summary_markdown'] = html2text(x['summary'], self.uri)
 
 	def get_feed(self):
 		"""Get the feed."""

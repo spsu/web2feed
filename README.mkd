@@ -64,6 +64,5 @@ More will be added as I write code to support comments, etc. Also to be output i
 
 License
 -------
-Licensed under the BSD.
-
+My code is licensed under the MIT and BSD licenses, however I have included Aaron Swartz' GPL-licensed [html2text](http://www.aaronsw.com/2002/html2text/), which generates structured Markdown from HTML. Thus, to redistribute the code as-is, it must be under the GPL. (Removal of this feature should be very simple and straightforward, however.)
 
