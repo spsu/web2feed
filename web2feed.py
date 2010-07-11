@@ -355,6 +355,28 @@ class Scraper(object):
 		# TODO: Do cleaning, etc. on this.
 		self.feed = self._extract_feed()
 
+		# TODO: Bad form
+		self._guess_format()
+
+	def _guess_format(self):
+		"""Guess the format of the data returned."""
+		for i in range(len(self.feed)):
+			x = self.feed[i]
+			guess_contents = not 'contents_format' in x
+			guess_summary = not 'summary_format' in x
+
+			if 'contents' in x and guess_contents:
+				if re.search(r'<\w+>', x['contents']):
+					x['contents_format'] = 'text/html'
+				else:
+					x['contents_format'] = 'text/plain'
+
+			if 'summary' in x and guess_summary:
+				if re.search(r'<\w+>', x['summary']):
+					x['summary_format'] = 'text/html'
+				else:
+					x['summary_format'] = 'text/plain'
+
 	def get_feed(self):
 		"""Get the feed."""
 		return self.feed
