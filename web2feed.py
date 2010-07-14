@@ -6,7 +6,12 @@
 # Copyright 2010. BSD/MIT licensed.
 # Utilizes GPL-licensed code, so combined distribution is GPL.
 
+import os
 import sys
+
+# Not sure if this is a good idea...
+sys.path.insert(0, os.path.abspath('./libs'))
+
 from urlparse import urlparse, urljoin
 import httplib
 from BeautifulSoup import BeautifulSoup
@@ -19,7 +24,6 @@ from html5lib import sanitizer, treebuilders
 # For PageCache
 import time
 import hashlib
-import os
 from datetime import datetime, timedelta
 
 try:
