@@ -228,7 +228,11 @@ def get_page(uri, timeout=10, redirect_max=2, caching=True, uagent=None,
 		"""Download the contents at the URI specified."""
 		print "Downloading %s ..." % uri
 		u = urlparse(uri)
-		c = httplib.HTTPConnection(u.netloc, timeout=timeout)
+		c = None
+		if sys.version_info >= (2, 6):
+			c = httplib.HTTPConnection(u.netloc, timeout=timeout)
+		else:
+			c = httplib.HTTPConnection(u.netloc) # timeout added in 2.6
 		if uagent==None:
 			uagent = 'web2feed.py (http://github.com/echelon/web2feed) ' \
 						'-- Scraping content for the distributed web'
